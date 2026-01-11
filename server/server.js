@@ -7,7 +7,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const app = express();
-const PORT = process.env.DB_PORT || 5000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
@@ -15,24 +15,33 @@ app.use(bodyParser.json());
 app.use(express.static('public'));
 
 // MySQL Connection
-const db = mysql.createConnection({
+const db = mysql.createPool({ // Use createPool instead of createConnection for better stability
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
   ssl: {
-    rejectUnauthorized: false // This allows the connection without a physical .pem certificate file
+    rejectUnauthorized: false // Required for Aiven SSL
+  },
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  enableKeepAlive: true, // Prevents the connection from "sleeping"
+  keepAliveInitialDelay: 0
+});
+
+// Test connection
+db.getConnection((err, connection) => {
+  if (err) {
+    console.error("❌ Database connection failed:", err.message);
+  } else {
+    console.log("✅ Successfully connected to Aiven MySQL!");
+    connection.release();
   }
 });
 
-// Connect to Database
-db.connect((err) => {
-  if (err) {
-    console.error('Database connection failed:', err);
-    return;
-  }
-  console.log('Connected to MySQL Database');
-});
+console.log("Attempting DB Connect to:", process.env.DB_HOST, "on port:", process.env.DB_PORT);
 
 // ==================== API ROUTES ====================
 
@@ -193,44 +202,48 @@ app.post('/api/inventory/adjust/:id', (req, res) => {
   const itemId = req.params.id;
   const { itemName, type, quantity, location, user } = req.body;
 
-  // Start a transaction to ensure both tables update together
-  db.beginTransaction((err) => {
-    if (err) return res.status(500).json({ error: err.message });
+  // 1. Get a dedicated connection from the pool for the transaction
+  db.getConnection((err, conn) => {
+    if (err) return res.status(500).json({ error: "Failed to get connection" });
 
-    // 1. Determine the math for the Inventory table
-    let stockChange = 0;
-    if (type === 'IN') stockChange = quantity;
-    if (type === 'OUT') stockChange = -quantity;
-    // Note: TRANSFER (stockChange = 0) only updates the 'location' column
-
-    const updateInventoryQuery = `
-      UPDATE inventory 
-      SET quantity = quantity + ?, location = ? 
-      WHERE id = ?
-    `;
-
-    db.query(updateInventoryQuery, [stockChange, location, itemId], (err, result) => {
+    conn.beginTransaction((err) => {
       if (err) {
-        return db.rollback(() => res.status(500).json({ error: err.message }));
+        conn.release();
+        return res.status(500).json({ error: err.message });
       }
 
-      // 2. Log the history in the Movements table
-      const insertMovementQuery = `
-        INSERT INTO movements (itemName, type, quantity, location, user, date) 
-        VALUES (?, ?, ?, ?, ?, NOW())
-      `;
+      let stockChange = (type === 'IN') ? quantity : (type === 'OUT') ? -quantity : 0;
 
-      db.query(insertMovementQuery, [itemName, type, quantity, location, user], (err) => {
+      const updateInventoryQuery = `UPDATE inventory SET quantity = quantity + ?, location = ? WHERE id = ?`;
+
+      conn.query(updateInventoryQuery, [stockChange, location, itemId], (err) => {
         if (err) {
-          return db.rollback(() => res.status(500).json({ error: err.message }));
+          return conn.rollback(() => {
+            conn.release();
+            res.status(500).json({ error: err.message });
+          });
         }
 
-        // 3. Commit the changes to the database
-        db.commit((err) => {
+        const insertMovementQuery = `INSERT INTO movements (itemName, type, quantity, location, user, date) VALUES (?, ?, ?, ?, ?, NOW())`;
+
+        conn.query(insertMovementQuery, [itemName, type, quantity, location, user], (err) => {
           if (err) {
-            return db.rollback(() => res.status(500).json({ error: err.message }));
+            return conn.rollback(() => {
+              conn.release();
+              res.status(500).json({ error: err.message });
+            });
           }
-          res.json({ message: `Stock ${type} processed successfully` });
+
+          conn.commit((err) => {
+            if (err) {
+              return conn.rollback(() => {
+                conn.release();
+                res.status(500).json({ error: err.message });
+              });
+            }
+            conn.release(); // Always release the connection back to the pool
+            res.json({ message: `Stock ${type} processed successfully` });
+          });
         });
       });
     });
