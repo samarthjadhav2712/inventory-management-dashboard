@@ -1,4 +1,4 @@
-# 📦Inventory Management Dashboard
+# 📦 Inventory Management Dashboard
 
 <div align="center">
 
@@ -10,6 +10,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 
 </div>
+
 ---
 
 ## 🌟 Overview
@@ -53,13 +54,13 @@ Perfect for warehouses, retail stores, and businesses needing real-time inventor
 
 #### 1. Clone Repository
 ```bash
-git clone https://github.com/yourusername/inventtrack.git
-cd inventtrack
+git clone https://github.com/samarthjadhav2712/inventory-management.git
+cd inventory-management
 ```
 
 #### 2. Backend Setup
 ```bash
-cd backend
+cd server
 npm install
 
 # Create .env file
@@ -80,7 +81,7 @@ npm start
 
 #### 3. Frontend Setup
 ```bash
-cd frontend
+cd ../client
 npm install
 
 # Create .env file
@@ -101,49 +102,78 @@ Backend:  http://localhost:5000
 ---
 
 ## 📁 Project Structure
-client/
-├── node_modules/       # Frontend dependencies
-├── src/
-│   ├── components/
-│   │   ├── data/       # Static/Mock data (StaticData.jsx)
-│   │   ├── Layout/     # Global UI (Header, Sidebar, Toast, Loading)
-│   │   ├── Modals/     # Forms (InventoryModal, StockAdjustmentModal)
-│   │   └── Tabs/       # Page Views (Overview, Movements, Analytics)
-│   ├── utils/
-│   │   ├── api.js      # Axios/Fetch wrapper for backend calls
-│   │   └── exportUtils.js # Logic for PDF/CSV exports
-│   ├── App.jsx         # Main application logic & state
-│   ├── index.css       # Global Tailwind styles
-│   └── main.jsx        # React DOM rendering
-├── .env                # Frontend environment variables (VITE_API_URL)
-├── index.html          # Entry HTML file
-├── package.json        # Frontend scripts
-└── vite.config.js      # Vite configuration
-
-server/
-├── node_modules/       # Backend dependencies
-├── .env                # Environment variables (DB credentials, Port)
-├── database.sql        # MySQL schema and initial setup queries
-├── package-lock.json
-├── package.json        # Backend scripts and dependencies
-└── server.js           # Main Entry Point & API Routes
+```
+inventory-management/
+│
+├── client/                          # Frontend Application
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── data/
+│   │   │   │   └── StaticData.jsx   # Mock/Static data for demo mode
+│   │   │   ├── Layout/
+│   │   │   │   ├── Header.jsx       # Top navigation bar
+│   │   │   │   ├── Sidebar.jsx      # Side navigation menu
+│   │   │   │   ├── Toast.jsx        # Notification component
+│   │   │   │   └── Loading.jsx      # Loading spinner
+│   │   │   ├── Modals/
+│   │   │   │   ├── InventoryModal.jsx        # Add/Edit product form
+│   │   │   │   └── StockAdjustmentModal.jsx  # Stock IN/OUT/TRANSFER form
+│   │   │   └── Tabs/
+│   │   │       ├── Overview.jsx     # Dashboard overview page
+│   │   │       ├── Movements.jsx    # Stock movements page
+│   │   │       └── Analytics.jsx    # Charts and analytics page
+│   │   ├── utils/
+│   │   │   ├── api.js               # API client (Axios/Fetch wrapper)
+│   │   │   └── exportUtils.js       # PDF/CSV export logic
+│   │   ├── App.jsx                  # Main application & state management
+│   │   ├── main.jsx                 # React DOM entry point
+│   │   └── index.css                # Global Tailwind CSS styles
+│   ├── public/
+│   │   └── vite.svg                 # Favicon
+│   ├── .env                         # Environment variables
+│   ├── index.html                   # HTML template
+│   ├── package.json                 # Frontend dependencies
+│   ├── vite.config.js               # Vite configuration
+│   ├── tailwind.config.js           # Tailwind CSS configuration
+│   └── postcss.config.js            # PostCSS configuration
+│
+├── server/                          # Backend Application
+│   ├── .env                         # Database credentials & port
+│   ├── server.js                    # Express server & API routes
+│   ├── database.sql                 # MySQL schema & sample data
+│   ├── package.json                 # Backend dependencies
+│   └── package-lock.json
+│
+├── .gitignore                       # Git ignore rules
+└── README.md                        # This file
 ```
 
 ---
 
 ## 🔌 API Endpoints
 
+### Inventory Management
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/inventory` | Fetch all items |
+| `GET` | `/api/inventory` | Fetch all inventory items |
 | `POST` | `/api/inventory` | Add new item |
-| `PUT` | `/api/inventory/:id` | Update item |
+| `PUT` | `/api/inventory/:id` | Update existing item |
 | `DELETE` | `/api/inventory/:id` | Delete item |
 | `POST` | `/api/inventory/adjust/:id` | Adjust stock (IN/OUT/TRANSFER) |
-| `GET` | `/api/inventory/movements` | Fetch all movements |
-| `POST` | `/api/inventory/movements` | Record movement |
-| `GET` | `/api/dashboard/stats` | Get statistics |
 
+### Movement Tracking
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/inventory/movements` | Fetch all movements |
+| `POST` | `/api/inventory/movements` | Record new movement |
+
+### Dashboard Statistics
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/dashboard/stats` | Get dashboard statistics |
 
 ## 🗄️ Database Schema
 
@@ -156,25 +186,33 @@ CREATE TABLE inventory (
   quantity INT NOT NULL DEFAULT 0,
   minStock INT NOT NULL DEFAULT 10,
   location VARCHAR(100) NOT NULL,
-  price DECIMAL(10, 2) NOT NULL,
+  price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
   lastUpdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_category (category)
-);
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_category (category),
+  INDEX idx_location (location)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
 ### `movements` Table
 ```sql
 CREATE TABLE movements (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  itemId INT NOT NULL,
   itemName VARCHAR(255) NOT NULL,
   type ENUM('IN', 'OUT', 'TRANSFER') NOT NULL,
   quantity INT NOT NULL,
   location VARCHAR(200) NOT NULL,
+  fromLocation VARCHAR(100),
+  toLocation VARCHAR(100),
   date DATE NOT NULL DEFAULT (CURRENT_DATE),
   user VARCHAR(100) NOT NULL,
+  notes TEXT,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (itemId) REFERENCES inventory(id) ON DELETE CASCADE,
-  INDEX idx_type (type)
-);
+  INDEX idx_type (type),
+  INDEX idx_date (date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
 ---
@@ -209,6 +247,7 @@ CREATE TABLE movements (
 1. Filter items using search
 2. Click "Export to PDF"
 3. Professional PDF downloads with timestamp
+
 ---
 
 ## 🔐 Security Features
@@ -218,11 +257,45 @@ CREATE TABLE movements (
 - ✅ CORS configuration
 - ✅ Input validation (frontend + backend)
 - ✅ Error handling without stack traces
+
 ---
+
+## 📈 Performance Optimization
+
+- Database connection pooling
+- Indexed queries for fast lookups
+- Client-side filtering (search)
+- Memoized calculations
+- Optimized re-renders
+
+---
+
+## 🚀 Deployment
+
+### Frontend (Vercel)
+```bash
+cd client
+npm run build
+vercel
+```
+
+### Backend (Heroku/Railway)
+```bash
+cd server
+echo "web: node server.js" > Procfile
+git push heroku main
+```
+
+### Database (Production)
+- Use managed MySQL (AWS RDS, PlanetScale, Railway)
+- Update `.env` with production credentials
+- Enable SSL connections
+
+---
+
 ## 👤 Author
 
 **Samarth Jadhav**
 - GitHub: [@samarthjadhav2712](https://github.com/samarthjadhav2712)
 - Email: samarth10jadhav@gmail.com
 
-</div>
