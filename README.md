@@ -101,22 +101,32 @@ Backend:  http://localhost:5000
 ---
 
 ## 📁 Project Structure
-```
-inventtrack/
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx          # Main dashboard
-│   │   ├── main.jsx         # Entry point
-│   │   └── index.css        # Tailwind imports
-│   ├── package.json
-│   ├── vite.config.js
-│   └── tailwind.config.js
-├── backend/
-│   ├── server.js            # Express server
-│   ├── database.sql         # MySQL schema
-│   ├── package.json
-│   └── .env                 # Environment variables
-└── README.md
+client/
+├── node_modules/       # Frontend dependencies
+├── src/
+│   ├── components/
+│   │   ├── data/       # Static/Mock data (StaticData.jsx)
+│   │   ├── Layout/     # Global UI (Header, Sidebar, Toast, Loading)
+│   │   ├── Modals/     # Forms (InventoryModal, StockAdjustmentModal)
+│   │   └── Tabs/       # Page Views (Overview, Movements, Analytics)
+│   ├── utils/
+│   │   ├── api.js      # Axios/Fetch wrapper for backend calls
+│   │   └── exportUtils.js # Logic for PDF/CSV exports
+│   ├── App.jsx         # Main application logic & state
+│   ├── index.css       # Global Tailwind styles
+│   └── main.jsx        # React DOM rendering
+├── .env                # Frontend environment variables (VITE_API_URL)
+├── index.html          # Entry HTML file
+├── package.json        # Frontend scripts
+└── vite.config.js      # Vite configuration
+
+server/
+├── node_modules/       # Backend dependencies
+├── .env                # Environment variables (DB credentials, Port)
+├── database.sql        # MySQL schema and initial setup queries
+├── package-lock.json
+├── package.json        # Backend scripts and dependencies
+└── server.js           # Main Entry Point & API Routes
 ```
 
 ---
@@ -209,28 +219,10 @@ CREATE TABLE movements (
 - ✅ Input validation (frontend + backend)
 - ✅ Error handling without stack traces
 ---
-
-## 🚀 Deployment
-
-### Frontend (Vercel)
-```bash
-cd frontend
-npm run build
-vercel
-```
-
-### Backend (Heroku)
-```bash
-cd backend
-echo "web: node server.js" > Procfile
-heroku create inventtrack-api
-git push heroku main
-```
----
 ## 👤 Author
 
-**Your Name**
-- GitHub: [@yourusername](https://github.com/yourusername)
-- Email: your.email@example.com
+**Samarth Jadhav**
+- GitHub: [@samarthjadhav2712](https://github.com/samarthjadhav2712)
+- Email: samarth10jadhav@gmail.com
 
 </div>
