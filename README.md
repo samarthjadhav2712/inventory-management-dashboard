@@ -272,24 +272,16 @@ CREATE TABLE movements (
 
 ## 🚀 Deployment
 
-### Frontend (Vercel)
-```bash
-cd client
-npm run build
-vercel
-```
+The application is deployed across a specialized cloud stack to ensure scalability and high availability.
 
-### Backend (Heroku/Railway)
-```bash
-cd server
-echo "web: node server.js" > Procfile
-git push heroku main
-```
+### **Architecture Overview**
+* **Frontend**: Hosted on **Vercel** for fast global delivery.
+* **Backend**: Hosted on **Render** as a managed Node.js Web Service.
+* **Database**: Managed **MySQL** instance hosted on **Aiven**.
 
-### Database (Production)
-- Use managed MySQL (AWS RDS, PlanetScale, Railway)
-- Update `.env` with production credentials
-- Enable SSL connections
+### **Live Links**
+* **Live Dashboard**: [https://inventory-management-dashboard-s2bi.vercel.app](https://inventory-management-dashboard-s2bi.vercel.app)
+* **API Endpoint**: [https://inventory-management-dashboard-8851.onrender.com/api](https://inventory-management-dashboard-8851.onrender.com/api)
 
 ---
 
